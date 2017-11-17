@@ -4,13 +4,14 @@ using DataStructures
 
 export
 
-    read_sgf,
+    load_sgf,
     parse_sgf
 
+include("types.jl")
 include("lexer.jl")
 include("parser.jl")
 
-function read_sgf(path::String)
+function load_sgf(path::String)
     open(path) do io
         parse_sgf(io)
     end

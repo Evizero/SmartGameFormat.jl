@@ -2,27 +2,13 @@ module Parser
 
 using DataStructures
 using ..Lexer
+using ..Node, ..GameTree, ..Collection
 
 struct ParseError <: Exception
     msg::String
 end
 
 # --------------------------------------------------------------------
-
-struct Node
-    properties::Dict{Symbol,Any}
-end
-
-function Base.show(io::IO, n::Node)
-    print(io, "; ")
-    for p in n.properties
-        showproperty(io, p)
-    end
-end
-
-function showproperty(io::IO, p::Pair)
-    print(io, p.first, join(map(v->string('[',v,']'), p.second)))
-end
 
 # Node = ";" { Property }
 function tryparse(::Type{Node}, queue::Deque)
@@ -96,23 +82,6 @@ end
 
 # --------------------------------------------------------------------
 
-struct GameTree
-    sequence::Vector{Node}
-    children::Vector{GameTree}
-end
-
-function Base.show(io::IO, t::GameTree)
-    print(io, "(")
-    for p in t.sequence
-        print(io, p)
-    end
-    for c in t.children
-        println(io)
-        print(io, c)
-    end
-    print(io, ")")
-end
-
 # GameTree = "(" Sequence { GameTree } ")"
 # Sequence = Node { Node }
 function tryparse(::Type{GameTree}, queue::Deque)
@@ -127,25 +96,17 @@ function tryparse(::Type{GameTree}, queue::Deque)
         node = tryparse(Node, queue)
     end
     # parse sub game trees
-    children = Vector{GameTree}()
+    variations = Vector{GameTree}()
     tree = tryparse(GameTree, queue)
     while !isnull(tree)
-        push!(children, get(tree))
+        push!(variations, get(tree))
         tree = tryparse(GameTree, queue)
     end
     # return the newly created gametree
-    Nullable(GameTree(sequence, children))
+    Nullable(GameTree(sequence, variations))
 end
 
 # --------------------------------------------------------------------
-
-struct Collection
-    children::Vector{GameTree}
-end
-
-function Base.show(io::IO, col::Collection)
-    print(io, join((string(c) for c in col.children), "\n"))
-end
 
 # Collection = GameTree { GameTree }
 function tryparse(::Type{Collection}, queue::Deque)
@@ -155,7 +116,7 @@ function tryparse(::Type{Collection}, queue::Deque)
         push!(trees, get(tree))
         tree = tryparse(GameTree, queue)
     end
-    Nullable(Collection(trees))
+    Nullable(trees)
 end
 
 # --------------------------------------------------------------------
@@ -172,7 +133,7 @@ end
 
 function parse(::Type{T}, queue::Deque) where T
     res = tryparse(T, queue)
-    isnull(res) && throw(ParseError("$T expected"))
+    isnull(res) && throw(ParseError("$(T.name.name) expected"))
     get(res)
 end
 
