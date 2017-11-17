@@ -62,9 +62,12 @@ function tryparsevalue(identifier::Symbol, queue::Deque)
     value = nothing # type is going to be Any
     token = front(queue)
     if token.name === 'S'
-        if identifier == :KM # komi
+        if identifier === :B || identifier === :W # Move (black/ white)
+            # we keep string because value is game specific
+            value = token.value
+        elseif identifier ∈ (:KM, :BL, :WL, :V, :TM) # Real (e.g. komi)
             value = Base.parse(Float64, token.value)
-        elseif identifier == :C # komi
+        elseif identifier ∈ (:C, :GC) # String (Comment or Gamecomment)
             value = replace(token.value, "]", "\\]")
             value = replace(value, ")", "\\)")
             value = replace(value, ":", "\\:")
@@ -128,7 +131,9 @@ function parse(ts::Lexer.TokenStream)
     while !eof(ts)
         push!(queue, Lexer.next_token(ts))
     end
-    parse(Collection, queue)
+    col = parse(Collection, queue)
+    # TODO: check property types (root node, etc)
+    col
 end
 
 function parse(::Type{T}, queue::Deque) where T
