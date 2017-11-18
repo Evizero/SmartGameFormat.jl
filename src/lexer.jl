@@ -15,15 +15,16 @@ end
 
 A SGF specific lexical token. It can be either for the following:
 
+- `Token('\\0')`: Empty token to denote trailing whitespaces.
 - `Token(';')`: Separator for nodes.
 - `Token('(')` and `Token(')')`: Delimiter for game trees.
 - `Token('[')` and `Token(']')`: Delimiter for property values.
 - `Token('I', "AB1")`: Identifier for properties. In general this
   are one or more uppercase letters. However, with the exception
-  of the first position, digits are also allowed to supported
-  older FF versions.
+  of the first position, digits are also allowed to occur in
+  order to supportedx older FF versions.
 - `Token('S', "abc 23(\\)")`: Any property value between `'['`
-  and `']'`. This includes moves, numbers, and text.
+  and `']'`. This includes moves, numbers, simple text, and text.
 """
 struct Token
     name::Char
@@ -31,6 +32,9 @@ struct Token
 end
 
 Token(name::Char) = Token(name, "")
+
+Base.hash(t::Token, h::UInt) = hash(t.name, hash(t.value, hash(:Token, h)))
+Base.:(==)(a::Token, b::Token) = isequal(a.name, b.name) && isequal(a.value, b.value)
 
 """
     TokenStream(io::IO)
@@ -40,13 +44,14 @@ using [`next_token`](@ref).
 """
 mutable struct TokenStream{I<:IO}
     io::I
-    incomment::Bool
+    inproperty::Bool
     next::Char
 end
 
 TokenStream(io::IO) = TokenStream(io, false, '\0')
 
-for fun in (:eof, :read, :position, :seek)
+Base.eof(ts::TokenStream) = eof(ts.io) && (ts.next == '\0')
+for fun in (:read, :position, :seek)
     @eval (Base.$fun)(ts::TokenStream, args...) =
         (Base.$fun)(ts.io, args...)
 end
@@ -56,16 +61,22 @@ iswhitespace(c::Char) = c ∈ (' ', '\t', '\r', '\n')
 """
     next_token(ts::TokenStream) -> Token
 
-Reads and returns the next `Token` from the given stream `ts`.
+Reads and returns the next `Token` from the given token stream
+`ts`. If no more token are available, then a `EOFError` will be
+thrown.
+
+Note that the lexer should support FF[1]-FF[4] versions. In case
+any unambiguously illegal character sequence is encountered, the
+function will throw a [`LexicalError`](@ref).
 """
 function next_token(ts::TokenStream)
-    eof(ts) && (ts.next == '\0') && throw(EOFError())
+    eof(ts) && throw(EOFError())
     c = ts.next == '\0' ? read(ts, Char)::Char : ts.next
     ts.next = '\0'
-    if ts.incomment && c === ']'
-        ts.incomment = false
+    if ts.inproperty && c === ']'
+        ts.inproperty = false
         Token(']')
-    elseif ts.incomment
+    elseif ts.inproperty
         buf = UInt8[c]
         while true
             c = read(ts, Char)::Char
@@ -121,7 +132,7 @@ function next_token(ts::TokenStream)
         end
         Token('S', String(buf))
     elseif c === '['
-        ts.incomment = true
+        ts.inproperty = true
         Token('[')
     elseif c === '('
         Token('(')
@@ -135,7 +146,7 @@ function next_token(ts::TokenStream)
             c = read(ts, Char)::Char
             if c in 'A':'Z'
                 push!(buf, c)
-            elseif c in '0':'9' # compatibility with FF[3]
+            elseif c in '0':'9' # compatibility with FF[1-3]
                 push!(buf, c)
             else
                 ts.next = c
@@ -144,7 +155,7 @@ function next_token(ts::TokenStream)
         end
         Token('I', String(buf))
     elseif iswhitespace(c)
-        next_token(ts)
+        eof(ts) ? Token('\0') : next_token(ts)
     else
         throw(LexicalError("Invalid character: \"$c\""))
     end

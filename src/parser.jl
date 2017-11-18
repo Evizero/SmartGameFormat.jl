@@ -129,7 +129,10 @@ parse(io::IO) = parse(Lexer.TokenStream(io))
 function parse(ts::Lexer.TokenStream)
     queue = Deque{Lexer.Token}()
     while !eof(ts)
-        push!(queue, Lexer.next_token(ts))
+        tkn = Lexer.next_token(ts)
+        if tkn != Token('\0')
+            push!(queue, tkn)
+        end
     end
     col = parse(Collection, queue)
     # TODO: check property types (root node, etc)
