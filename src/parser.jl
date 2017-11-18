@@ -130,7 +130,7 @@ function parse(ts::Lexer.TokenStream)
     queue = Deque{Lexer.Token}()
     while !eof(ts)
         tkn = Lexer.next_token(ts)
-        if tkn != Token('\0')
+        if tkn != Lexer.Token('\0')
             push!(queue, tkn)
         end
     end
