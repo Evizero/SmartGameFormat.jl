@@ -9,6 +9,7 @@ ambs = detect_ambiguities(Base, Core)
 
 tests = [
     "tst_lexer.jl",
+    "tst_parser.jl",
 ]
 
 for t in tests

@@ -19,7 +19,6 @@ end
     @test_throws UndefVarError next_token
 end
 
-
 @testset "lexical error" begin
     # all kind of characters that should not be encountered
     # except inside property delimiter "[...]"

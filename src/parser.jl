@@ -4,6 +4,13 @@ using DataStructures
 using ..Lexer
 using ..Node, ..GameTree, ..Collection
 
+"""
+    ParseError(msg)
+
+The expression passed to `Parser.parse` could not be interpreted
+as a valid SGF specification (in accordance with the specified FF
+version).
+"""
 struct ParseError <: Exception
     msg::String
 end
@@ -38,12 +45,14 @@ function tryparse(::Type{Pair}, queue::Deque)
     # there must be at least one value
     values = Any[] # There must be at least one
     value = tryparsevalue(identifier, queue)
-    isnull(value) && throw(ParseError("[ expected"))
+    isnull(value) && throw(ParseError("missing \"[\" after identifier"))
     push!(values, get(value))
     # parse optional values
     value = tryparsevalue(identifier, queue)
     while !isnull(value)
-        get(value) != nothing && push!(values, get(value))
+        if get(value) != nothing
+            push!(values, get(value))
+        end
         value = tryparsevalue(identifier, queue)
     end
     # return the newly created pair
@@ -78,7 +87,7 @@ function tryparsevalue(identifier::Symbol, queue::Deque)
     end
     # property value must end with a ]
     token = shift!(queue)
-    token.name === ']' || throw(ParseError("] expected"))
+    token.name === ']' || throw(ParseError("missing \"]\" after property value"))
     # return the newly created value
     Nullable(value)
 end
@@ -113,13 +122,13 @@ end
 
 # Collection = GameTree { GameTree }
 function tryparse(::Type{Collection}, queue::Deque)
-    trees = GameTree[parse(GameTree, queue)]
+    col = GameTree[parse(GameTree, queue)]
     tree = tryparse(GameTree, queue)
     while !isnull(tree)
-        push!(trees, get(tree))
+        push!(col, get(tree))
         tree = tryparse(GameTree, queue)
     end
-    Nullable(trees)
+    Nullable(col)
 end
 
 # --------------------------------------------------------------------

@@ -1,5 +1,7 @@
 module Lexer
 
+using Base.UTF8proc.isspace
+
 """
     LexicalError(msg)
 
@@ -56,8 +58,6 @@ for fun in (:read, :position, :seek)
         (Base.$fun)(ts.io, args...)
 end
 
-iswhitespace(c::Char) = c ∈ (' ', '\t', '\r', '\n')
-
 """
     next_token(ts::TokenStream) -> Token
 
@@ -100,7 +100,7 @@ function next_token(ts::TokenStream)
                     if c != '\r'
                         @goto check_c_again
                     end
-                elseif iswhitespace(c)
+                elseif isspace(c)
                     push!(buf, ' ')
                 else
                     # everything else is stored verbatim
@@ -122,7 +122,7 @@ function next_token(ts::TokenStream)
                 if c != '\r'
                     @goto check_c_again
                 end
-            elseif iswhitespace(c)
+            elseif isspace(c)
                 # since newlines are already processed at this point,
                 # every other whitespace can be replaced with ' '
                 push!(buf, ' ')
@@ -154,7 +154,7 @@ function next_token(ts::TokenStream)
             end
         end
         Token('I', String(buf))
-    elseif iswhitespace(c)
+    elseif isspace(c)
         eof(ts) ? Token('\0') : next_token(ts)
     else
         throw(LexicalError("Invalid character: \"$c\""))
