@@ -1,14 +1,14 @@
-struct Node
+struct SGFNode
     properties::Dict{Symbol,Any}
 end
 
 for fun in (:haskey, :getindex, :getkey, :get, :keys, :values,
             :keytype, :valtype)
-    @eval Base.@propagate_inbounds (Base.$fun)(n::Node, args...) =
+    @eval Base.@propagate_inbounds (Base.$fun)(n::SGFNode, args...) =
         (Base.$fun)(n.properties, args...)
 end
 
-function Base.show(io::IO, n::Node)
+function Base.show(io::IO, n::SGFNode)
     if haskey(io, :compact)
         for (i,p) in enumerate(n.properties)
             join(map(v->string('[',v,']'), p.second))
@@ -37,12 +37,12 @@ end
 
 # --------------------------------------------------------------------
 
-struct GameTree <: AbstractVector{Node}
-    sequence::Vector{Node}
-    variations::Vector{GameTree}
+struct SGFGameTree <: AbstractVector{SGFNode}
+    sequence::Vector{SGFNode}
+    variations::Vector{SGFGameTree}
 end
 
-function Base.size(t::GameTree)
+function Base.size(t::SGFGameTree)
     n = length(t.sequence)
     if length(t.variations) > 0
         n += size(first(t.variations))[1]
@@ -50,7 +50,7 @@ function Base.size(t::GameTree)
     (n,)
 end
 
-function Base.getindex(t::GameTree, i::Int)
+function Base.getindex(t::SGFGameTree, i::Int)
     @boundscheck 0 < i <= length(t)
     if i <= length(t.sequence)
         t.sequence[i]
@@ -59,10 +59,10 @@ function Base.getindex(t::GameTree, i::Int)
     end
 end
 
-function Base.summary(t::GameTree)
+function Base.summary(t::SGFGameTree)
     string(length(t), "-node ", typeof(t), " with ", length(t.variations), " variation(s)")
 end
 
 # --------------------------------------------------------------------
 
-const Collection = Vector{GameTree}
+const SGFCollection = Vector{SGFGameTree}

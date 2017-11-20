@@ -2,7 +2,7 @@ module Parser
 
 using DataStructures
 using ..Lexer
-using ..Node, ..GameTree, ..Collection
+using ..SGFNode, ..SGFGameTree, ..SGFCollection
 
 """
     ParseError(msg)
@@ -17,10 +17,10 @@ end
 
 # --------------------------------------------------------------------
 
-# Node = ";" { Property }
-function tryparse(::Type{Node}, queue::Deque)
+# SGFNode = ";" { Property }
+function tryparse(::Type{SGFNode}, queue::Deque)
     token = front(queue)
-    token.name === ';' || return Nullable{Node}()
+    token.name === ';' || return Nullable{SGFNode}()
     shift!(queue)
     # parse optional properties
     properties = Dict{Symbol,Vector{Any}}()
@@ -32,13 +32,13 @@ function tryparse(::Type{Node}, queue::Deque)
         pair = tryparse(Pair, queue)
     end
     # return the newly created node
-    Nullable(Node(properties))
+    Nullable(SGFNode(properties))
 end
 
 # Property = PropIdent PropValue { PropValue }
 function tryparse(::Type{Pair}, queue::Deque)
     token = front(queue)
-    token.name === 'I' || return Nullable{Node}()
+    token.name === 'I' || return Nullable{SGFNode}()
     shift!(queue)
     # identifier for the property
     identifier = Symbol(token.value)
@@ -65,7 +65,7 @@ end
 #               Text | Point  | Move | Stone)
 function tryparsevalue(identifier::Symbol, queue::Deque)
     token = front(queue)
-    token.name === '[' || return Nullable{Node}()
+    token.name === '[' || return Nullable{SGFNode}()
     shift!(queue)
     # parse values. There need not be one (as long as [] are there)
     value = nothing # type is going to be Any
@@ -94,39 +94,39 @@ end
 
 # --------------------------------------------------------------------
 
-# GameTree = "(" Sequence { GameTree } ")"
-# Sequence = Node { Node }
-function tryparse(::Type{GameTree}, queue::Deque)
+# SGFGameTree = "(" Sequence { SGFGameTree } ")"
+# Sequence = SGFNode { SGFNode }
+function tryparse(::Type{SGFGameTree}, queue::Deque)
     token = front(queue)
-    token.name === '(' || return Nullable{GameTree}()
+    token.name === '(' || return Nullable{SGFGameTree}()
     shift!(queue)
     # parse sequence of nodes
-    sequence = Node[parse(Node, queue)] # There must be at least one
-    node = tryparse(Node, queue)
+    sequence = SGFNode[parse(SGFNode, queue)] # There must be at least one
+    node = tryparse(SGFNode, queue)
     while !isnull(node)
         push!(sequence, get(node))
-        node = tryparse(Node, queue)
+        node = tryparse(SGFNode, queue)
     end
     # parse sub game trees
-    variations = Vector{GameTree}()
-    tree = tryparse(GameTree, queue)
+    variations = Vector{SGFGameTree}()
+    tree = tryparse(SGFGameTree, queue)
     while !isnull(tree)
         push!(variations, get(tree))
-        tree = tryparse(GameTree, queue)
+        tree = tryparse(SGFGameTree, queue)
     end
     # return the newly created gametree
-    Nullable(GameTree(sequence, variations))
+    Nullable(SGFGameTree(sequence, variations))
 end
 
 # --------------------------------------------------------------------
 
-# Collection = GameTree { GameTree }
-function tryparse(::Type{Collection}, queue::Deque)
-    col = GameTree[parse(GameTree, queue)]
-    tree = tryparse(GameTree, queue)
+# SGFCollection = SGFGameTree { SGFGameTree }
+function tryparse(::Type{SGFCollection}, queue::Deque)
+    col = SGFGameTree[parse(SGFGameTree, queue)]
+    tree = tryparse(SGFGameTree, queue)
     while !isnull(tree)
         push!(col, get(tree))
-        tree = tryparse(GameTree, queue)
+        tree = tryparse(SGFGameTree, queue)
     end
     Nullable(col)
 end
@@ -143,7 +143,7 @@ function parse(ts::Lexer.TokenStream)
             push!(queue, tkn)
         end
     end
-    col = parse(Collection, queue)
+    col = parse(SGFCollection, queue)
     # TODO: check property types (root node, etc)
     col
 end

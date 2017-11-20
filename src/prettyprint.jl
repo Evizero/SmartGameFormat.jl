@@ -16,7 +16,7 @@ function print_sgf(A; color = true)
     print_sgf(STDOUT, A; color = color)
 end
 
-function print_sgf(io::IO, n::Node; color = true)
+function print_sgf(io::IO, n::SGFNode; color = true)
     print_crayon(io, Crayon(foreground = 243, bold = true), color)
     print(io, ";")
     print_crayon(io, Crayon(reset = true), color)
@@ -38,7 +38,7 @@ function print_sgf(io::IO, p::Pair; color = true)
     end
 end
 
-function print_sgf(io::IO, t::GameTree; color = true)
+function print_sgf(io::IO, t::SGFGameTree; color = true)
     print_crayon(io, Crayon(foreground = 173), color)
     print(io, "(")
     print_crayon(io, Crayon(reset = true), color)
@@ -54,7 +54,7 @@ function print_sgf(io::IO, t::GameTree; color = true)
     print_crayon(io, Crayon(reset = true), color)
 end
 
-function print_sgf(io::IO, col::Collection; color = true)
+function print_sgf(io::IO, col::SGFCollection; color = true)
     for (i,t) in enumerate(col)
         print_sgf(io, t; color = color)
         i < length(col) && println(io)

@@ -5,6 +5,9 @@ using Crayons
 
 export
 
+    SGFNode,
+    SGFGameTree,
+
     load_sgf,
     parse_sgf,
     print_sgf
@@ -15,22 +18,22 @@ include("parser.jl")
 include("prettyprint.jl")
 
 """
-    load_sgf(path::String) -> Vector{GameTree}
+    load_sgf(path::String) -> Vector{SGFGameTree}
 
 Read the content from the file at `path`, and call
 [`parse_sgf`](@ref) to convert it to a collection of
-[`GameTree`](@ref).
+[`SGFGameTree`](@ref).
 """
 load_sgf(path::String) = open(parse_sgf, path)
 
 """
-    load_sgf(io::IO) -> Vector{GameTree}
-    load_sgf(str::String) -> Vector{GameTree}
+    load_sgf(io::IO) -> Vector{SGFGameTree}
+    load_sgf(str::String) -> Vector{SGFGameTree}
 
 Read the content from `io` (or `str`), and attempt to parse it as
 an SGF collection. If successful, the collection is returned as a
-vector of [`GameTree`](@ref). In most cases this collection will
-just have a single tree.
+vector of [`SGFGameTree`](@ref). In most cases this collection
+will just have a single tree.
 
 Depending on the content an exception may be thrown to signal
 that it is not a legal SGF specification.
