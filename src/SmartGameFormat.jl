@@ -9,6 +9,7 @@ export
     SGFGameTree,
 
     load_sgf,
+    save_sgf,
     parse_sgf,
     print_sgf
 
@@ -27,8 +28,20 @@ Read the content from the file at `path`, and call
 load_sgf(path::String) = open(parse_sgf, path)
 
 """
-    load_sgf(io::IO) -> Vector{SGFGameTree}
-    load_sgf(str::String) -> Vector{SGFGameTree}
+    save_sgf(path::String, sgf)
+
+Write the given `sgf` object (e.g. [`SGFNode`](@ref), or
+[`SGFGameTree`](@ref) into the given file at `path`.
+"""
+function save_sgf(path::String, sgf)
+    open(path, "w") do io
+        print_sgf(io, sgf, color = false)
+    end
+end
+
+"""
+    parse_sgf(io::IO) -> Vector{SGFGameTree}
+    parse_sgf(str::String) -> Vector{SGFGameTree}
 
 Read the content from `io` (or `str`), and attempt to parse it as
 an SGF collection. If successful, the collection is returned as a
