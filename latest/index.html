@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · SmartGameFormat.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link href="assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>SmartGameFormat.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li class="current"><a class="toctext" href>Home</a><ul class="internal"><li><a class="toctext" href="#Exported-Types-1">Exported Types</a></li><li><a class="toctext" href="#Public-Functions-1">Public Functions</a></li><li><a class="toctext" href="#Index-1">Index</a></li></ul></li><li><span class="toctext">Internals</span><ul><li><a class="toctext" href="lexer/">Lexer Submodule</a></li><li><a class="toctext" href="parser/">Parser Submodule</a></li></ul></li></ul></nav><article id="docs"><header><nav><ul><li><a href>Home</a></li></ul><a class="edit-page" href="https://github.com/Evizero/SmartGameFormat.jl/blob/master/docs/src/index.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Home</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="SmartGameFormat.jl-Documentation-1" href="#SmartGameFormat.jl-Documentation-1">SmartGameFormat.jl Documentation</a></h1><p>SmartGameFormat.jl is a Julia package to read/write from/to SGF files. More specifically does this package aim to implement the specification of the SGF FF[4] standard.</p><p>Description from the <a href="http://www.red-bean.com/sgf/index.html">official website</a>:</p><blockquote><p>SGF is the abbreviation of &#39;Smart Game Format&#39;. The file format is designed to store game records of board games for two players. It&#39;s a text only, tree based format. Therefore games stored in this format can easily be emailed, posted or processed with text-based tools. The main purposes of SGF are to store records of played games and to provide features for storing annotated and analyzed games (e.g. board markup, variations).</p></blockquote><h2><a class="nav-anchor" id="Exported-Types-1" href="#Exported-Types-1">Exported Types</a></h2><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SmartGameFormat.SGFNode" href="#SmartGameFormat.SGFNode"><code>SmartGameFormat.SGFNode</code></a> — <span class="docstring-category">Type</span>.</div><div><pre><code class="language-none">SGFNode(properties::Pair{Symbol,Any}...)</code></pre><p>Create an SGF node with the given properties. The parameter <code>properties</code> is optional, which means that its possible to create empty nodes.</p><p>Additional properties can be added at any time using the function <code>setindex!</code> or <code>push!</code>. Note how the property values are stored in a <code>Vector{Any}</code>. This is on purpose in order to support multi-value properties.</p><pre><code class="language-julia-repl">julia&gt; using SmartGameFormat
+
+julia&gt; node = SGFNode()
+SmartGameFormat.SGFNode with 0 properties
+
+julia&gt; node[:KM] = 6.5; # set komi property
+
+julia&gt; node
+SmartGameFormat.SGFNode with 1 property:
+  :KM =&gt; Any[6.5]</code></pre><p>While <code>setindex!</code> will always overwrite existing values, the function <code>push!</code> will instead try to append the given value to an existing property.</p><pre><code class="language-julia-repl">julia&gt; push!(node, :AB =&gt; &quot;aa&quot;)
+SmartGameFormat.SGFNode with 2 properties:
+  :AB =&gt; Any[&quot;aa&quot;]
+  :KM =&gt; Any[6.5]
+
+julia&gt; push!(node, :AB =&gt; &quot;bb&quot;)
+SmartGameFormat.SGFNode with 2 properties:
+  :AB =&gt; Any[&quot;aa&quot;, &quot;bb&quot;]
+  :KM =&gt; Any[6.5]</code></pre></div><a class="source-link" target="_blank" href="https://github.com/Evizero/SmartGameFormat.jl/blob/f21b770bc124e734844371167576f584400c372b/src/types.jl#L4-L44">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SmartGameFormat.SGFGameTree" href="#SmartGameFormat.SGFGameTree"><code>SmartGameFormat.SGFGameTree</code></a> — <span class="docstring-category">Type</span>.</div><div><pre><code class="language-none">SGFGameTree([sequence::Vector{SGFNode}], [variations::Vector{SGFGameTree}])</code></pre><p>Create a game tree with the given <code>sequence</code> and <code>variations</code>. Both parameters are optional, which means that its possible to create empty game trees.</p><p>To edit a <code>SGFGameTree</code> simply manipulate the two member variables directly. Note that <code>SGFGameTree</code> is a subtype of <code>AbstractVector{SGFNode}</code>, where <code>getindex</code> and <code>setindex!</code> correspond to the appropriate node in the main game path. This means that if there are any variations, then the first variation must denote the continuation of the main game path.</p><pre><code class="language-julia-repl">julia&gt; using SmartGameFormat
+
+julia&gt; t = SGFGameTree()
+0-node SmartGameFormat.SGFGameTree with 0 variation(s)
+
+julia&gt; push!(t.sequence, SGFNode(:KM =&gt; 6.5)); t
+1-node SmartGameFormat.SGFGameTree with 0 variation(s):
+ KM[6.5]
+
+julia&gt; t.variations = [SGFGameTree(SGFNode(:C=&gt;&quot;first&quot;)), SGFGameTree(SGFNode(:C=&gt;&quot;second&quot;))]; t
+2-node SmartGameFormat.SGFGameTree with 2 variation(s):
+ KM[6.5]
+ C[…]
+
+julia&gt; t[1]
+SmartGameFormat.SGFNode with 1 property:
+  :KM =&gt; Any[6.5]
+
+julia&gt; t[2]
+SmartGameFormat.SGFNode with 1 property:
+  :C =&gt; Any[&quot;first&quot;]</code></pre></div><a class="source-link" target="_blank" href="https://github.com/Evizero/SmartGameFormat.jl/blob/f21b770bc124e734844371167576f584400c372b/src/types.jl#L116-L153">source</a></section><h2><a class="nav-anchor" id="Public-Functions-1" href="#Public-Functions-1">Public Functions</a></h2><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SmartGameFormat.load_sgf" href="#SmartGameFormat.load_sgf"><code>SmartGameFormat.load_sgf</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">load_sgf(path::String) -&gt; Vector{SGFGameTree}</code></pre><p>Read the content from the file at <code>path</code>, and call <a href="#SmartGameFormat.parse_sgf"><code>parse_sgf</code></a> to convert it to a collection of <a href="#SmartGameFormat.SGFGameTree"><code>SGFGameTree</code></a> (i.e. a <code>Vector{SGFGameTree}</code>).</p><pre><code class="language-julia-repl">julia&gt; using SmartGameFormat
+
+julia&gt; path = joinpath(Pkg.dir(&quot;SmartGameFormat&quot;), &quot;examples&quot;, &quot;sample.sgf&quot;);
+
+julia&gt; col = load_sgf(path)
+1-element Array{SmartGameFormat.SGFGameTree,1}:
+ SmartGameFormat.SGFNode[FF[4] GM[1] SZ[19], B[aa], W[bb], B[cc]]
+
+julia&gt; col[1]
+4-node SmartGameFormat.SGFGameTree with 2 variation(s):
+ FF[4] GM[1] SZ[19]
+ B[aa]
+ W[bb]
+ B[cc]</code></pre></div><a class="source-link" target="_blank" href="https://github.com/Evizero/SmartGameFormat.jl/blob/f21b770bc124e734844371167576f584400c372b/src/SmartGameFormat.jl#L21-L44">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SmartGameFormat.save_sgf" href="#SmartGameFormat.save_sgf"><code>SmartGameFormat.save_sgf</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">save_sgf(path::String, sgf)</code></pre><p>Write the given <code>sgf</code> object (e.g. <a href="#SmartGameFormat.SGFNode"><code>SGFNode</code></a>, or <a href="#SmartGameFormat.SGFGameTree"><code>SGFGameTree</code></a>) into the given file at <code>path</code>. Note that it is a current limitation that the character encoding is hardcoded to UTF8 (no matter what any property specifies).</p><pre><code class="language-julia-repl">julia&gt; using SmartGameFormat
+
+julia&gt; save_sgf(&quot;/tmp/example.sgf&quot;, SGFGameTree(SGFNode(:KM =&gt; 6.5)))
+
+julia&gt; readstring(&quot;/tmp/example.sgf&quot;) # take a look at file content
+&quot;(; KM[6.5])&quot;</code></pre></div><a class="source-link" target="_blank" href="https://github.com/Evizero/SmartGameFormat.jl/blob/f21b770bc124e734844371167576f584400c372b/src/SmartGameFormat.jl#L47-L63">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SmartGameFormat.parse_sgf" href="#SmartGameFormat.parse_sgf"><code>SmartGameFormat.parse_sgf</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">parse_sgf(io::IO) -&gt; Vector{SGFGameTree}
+parse_sgf(str::String) -&gt; Vector{SGFGameTree}</code></pre><p>Read the content from <code>io</code> (or <code>str</code>), and attempt to parse it as an SGF collection. If successful, the collection is returned as a vector of <a href="#SmartGameFormat.SGFGameTree"><code>SGFGameTree</code></a>. In most cases this collection will just have a single tree.</p><pre><code class="language-julia-repl">julia&gt; using SmartGameFormat
+
+julia&gt; col = parse_sgf(&quot;(; FF[4] KM[6.5]; B[aa])&quot;)
+1-element Array{SmartGameFormat.SGFGameTree,1}:
+ SmartGameFormat.SGFNode[KM[6.5] FF[4], B[aa]]
+
+julia&gt; tree = col[1]
+2-node SmartGameFormat.SGFGameTree with 0 variation(s):
+ KM[6.5] FF[4]
+ B[aa]
+
+julia&gt; node = tree[1]
+SmartGameFormat.SGFNode with 2 properties:
+  :KM =&gt; Any[6.5]
+  :FF =&gt; Any[&quot;4&quot;]</code></pre><p>Depending on the content an exception may be thrown to signal that it is not a legal SGF specification.</p><ul><li><p><code>Base.EOFError</code>: Premature end-of-file encountered during tokenisation.</p></li><li><p><a href="lexer/#SmartGameFormat.Lexer.LexicalError"><code>Lexer.LexicalError</code></a>: illegal characters used outside property values. For example lower case letters for identifier.</p></li><li><p><a href="parser/#SmartGameFormat.Parser.ParseError"><code>Parser.ParseError</code></a>: content is not a valid SGF specification (while considering the given the FF version).</p></li></ul><p>Internally, the function simply calls <a href="parser/#SmartGameFormat.Parser.parse"><code>Parser.parse</code></a>. Take a look at the corresponding documentation for more details.</p></div><a class="source-link" target="_blank" href="https://github.com/Evizero/SmartGameFormat.jl/blob/f21b770bc124e734844371167576f584400c372b/src/SmartGameFormat.jl#L70-L111">source</a></section><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="SmartGameFormat.print_sgf" href="#SmartGameFormat.print_sgf"><code>SmartGameFormat.print_sgf</code></a> — <span class="docstring-category">Function</span>.</div><div><pre><code class="language-none">print_sgf([io], sgf; [color = true])</code></pre><p>Writes the given parsed <code>sfg</code> to <code>io</code> (defaults to <code>STDOUT</code>). If the keyword parameter <code>color = true</code> then an ANSI based syntax highlighting will be used.</p></div><a class="source-link" target="_blank" href="https://github.com/Evizero/SmartGameFormat.jl/blob/f21b770bc124e734844371167576f584400c372b/src/prettyprint.jl#L8-L14">source</a></section><h2><a class="nav-anchor" id="Index-1" href="#Index-1">Index</a></h2><ul><li><a href="#SmartGameFormat.SGFGameTree"><code>SmartGameFormat.SGFGameTree</code></a></li><li><a href="#SmartGameFormat.SGFNode"><code>SmartGameFormat.SGFNode</code></a></li><li><a href="#SmartGameFormat.load_sgf"><code>SmartGameFormat.load_sgf</code></a></li><li><a href="#SmartGameFormat.parse_sgf"><code>SmartGameFormat.parse_sgf</code></a></li><li><a href="#SmartGameFormat.print_sgf"><code>SmartGameFormat.print_sgf</code></a></li><li><a href="#SmartGameFormat.save_sgf"><code>SmartGameFormat.save_sgf</code></a></li><li><a href="lexer/#SmartGameFormat.Lexer"><code>SmartGameFormat.Lexer</code></a></li><li><a href="lexer/#SmartGameFormat.Lexer.LexicalError"><code>SmartGameFormat.Lexer.LexicalError</code></a></li><li><a href="lexer/#SmartGameFormat.Lexer.Token"><code>SmartGameFormat.Lexer.Token</code></a></li><li><a href="lexer/#SmartGameFormat.Lexer.TokenStream"><code>SmartGameFormat.Lexer.TokenStream</code></a></li><li><a href="lexer/#SmartGameFormat.Lexer.next_token"><code>SmartGameFormat.Lexer.next_token</code></a></li><li><a href="parser/#SmartGameFormat.Parser"><code>SmartGameFormat.Parser</code></a></li><li><a href="parser/#SmartGameFormat.Parser.ParseError"><code>SmartGameFormat.Parser.ParseError</code></a></li><li><a href="parser/#SmartGameFormat.Parser.parse"><code>SmartGameFormat.Parser.parse</code></a></li><li><a href="parser/#SmartGameFormat.Parser.tryparse"><code>SmartGameFormat.Parser.tryparse</code></a></li></ul><footer><hr/><a class="next" href="lexer/"><span class="direction">Next</span><span class="title">Lexer Submodule</span></a></footer></article></body></html>
