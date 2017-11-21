@@ -57,9 +57,6 @@ SGFNode(pair::Pair{Symbol}) = SGFNode(pair.first => boxvector(pair.second))
 Base.hash(n::SGFNode, h::UInt) = hash(n.properties, hash(:SGFNode, h))
 Base.:(==)(a::SGFNode, b::SGFNode) = isequal(a.properties, b.properties)
 
-Base.@propagate_inbounds Base.setindex!(n::SGFNode, v, id) =
-    Base.setindex!(n.properties, boxvector(v), id)
-
 @inline Base.push!(n::SGFNode, pair::Pair{Symbol,<:Vector}) =
     push!(n.properties, pair)
 
@@ -77,6 +74,9 @@ for fun in (:haskey, :getindex, :getkey, :get, :keys, :values,
     @eval Base.@propagate_inbounds (Base.$fun)(n::SGFNode, args...) =
         (Base.$fun)(n.properties, args...)
 end
+
+Base.@propagate_inbounds Base.setindex!(n::SGFNode, v, id) =
+    Base.setindex!(n.properties, boxvector(v), id)
 
 function Base.show(io::IO, n::SGFNode)
     if haskey(io, :compact)
@@ -113,10 +113,56 @@ end
 
 # --------------------------------------------------------------------
 
-struct SGFGameTree <: AbstractVector{SGFNode}
+"""
+    SGFGameTree([sequence::Vector{SGFNode}], [variations::Vector{SGFGameTree}])
+
+Create a game tree with the given `sequence` and `variations`. Both
+parameters are optional, which means that its possible to create
+empty game trees.
+
+To edit a `SGFGameTree` simply manipulate the two member
+variables directly. Note that `SGFGameTree` is a subtype of
+`AbstractVector{SGFNode}`, where `getindex` and `setindex!`
+correspond to the appropriate node in the main game path. This
+means that if there are any variations, then the first variation
+must denote the continuation of the main game path.
+
+```jldoctests
+julia> using SmartGameFormat
+
+julia> t = SGFGameTree()
+0-node SmartGameFormat.SGFGameTree with 0 variation(s)
+
+julia> push!(t.sequence, SGFNode(:KM => 6.5)); t
+1-node SmartGameFormat.SGFGameTree with 0 variation(s):
+ KM[6.5]
+
+julia> t.variations = [SGFGameTree(SGFNode(:C=>"first")), SGFGameTree(SGFNode(:C=>"second"))]; t
+2-node SmartGameFormat.SGFGameTree with 2 variation(s):
+ KM[6.5]
+ C[…]
+
+julia> t[1]
+SmartGameFormat.SGFNode with 1 property:
+  :KM => Any[6.5]
+
+julia> t[2]
+SmartGameFormat.SGFNode with 1 property:
+  :C => Any["first"]
+```
+"""
+mutable struct SGFGameTree <: AbstractVector{SGFNode}
     sequence::Vector{SGFNode}
     variations::Vector{SGFGameTree}
 end
+
+SGFGameTree(sequence::Vector{SGFNode} = SGFNode[]) =
+    SGFGameTree(sequence, SGFGameTree[])
+SGFGameTree(node::SGFNode) =
+    SGFGameTree([node])
+
+Base.hash(t::SGFGameTree, h::UInt) = hash(t.sequence, hash(t.variations, hash(:SGFGameTree, h)))
+Base.:(==)(a::SGFGameTree, b::SGFGameTree) = isequal(a.sequence, b.sequence) && isequal(a.variations, b.variations)
 
 function Base.size(t::SGFGameTree)
     n = length(t.sequence)
@@ -127,12 +173,24 @@ function Base.size(t::SGFGameTree)
 end
 
 function Base.getindex(t::SGFGameTree, i::Int)
-    @boundscheck 0 < i <= length(t)
+    @boundscheck checkbounds(t, i)
     if i <= length(t.sequence)
-        t.sequence[i]
+        @inbounds n = t.sequence[i]
+        n
     else
-        t.variations[1][i - length(t.sequence)]
+        @inbounds n = t.variations[1][i - length(t.sequence)]
+        n
     end
+end
+
+function Base.setindex!(t::SGFGameTree, n::SGFNode, i::Int)
+    @boundscheck checkbounds(t, i)
+    if i <= length(t.sequence)
+        @inbounds t.sequence[i] = n
+    else
+        @inbounds t.variations[1][i - length(t.sequence)] = n
+    end
+    nothing
 end
 
 function Base.summary(t::SGFGameTree)
