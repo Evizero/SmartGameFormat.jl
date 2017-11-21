@@ -1,5 +1,4 @@
 @testset "public interface" begin
-    @test_throws UndefVarError SGFCollection # private typealias
     @test SGFNode === SmartGameFormat.SGFNode
     @test SGFGameTree === SmartGameFormat.SGFGameTree
 end

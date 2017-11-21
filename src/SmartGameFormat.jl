@@ -60,7 +60,6 @@ that it is not a legal SGF specification.
 - [`Parser.ParseError`](@ref): content is not a valid SGF
   specification (while considering the given the FF version).
 """
-parse_sgf(str::String) = parse_sgf(IOBuffer(str))
-parse_sgf(io::IO) = Parser.parse(io)
+parse_sgf(input) = Parser.parse(input)
 
 end # module

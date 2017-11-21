@@ -54,7 +54,7 @@ function print_sgf(io::IO, t::SGFGameTree; color = true)
     print_crayon(io, Crayon(reset = true), color)
 end
 
-function print_sgf(io::IO, col::SGFCollection; color = true)
+function print_sgf(io::IO, col::AbstractVector{SGFGameTree}; color = true)
     for (i,t) in enumerate(col)
         print_sgf(io, t; color = color)
         i < length(col) && println(io)

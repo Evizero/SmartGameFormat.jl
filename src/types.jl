@@ -196,7 +196,3 @@ end
 function Base.summary(t::SGFGameTree)
     string(length(t), "-node ", typeof(t), " with ", length(t.variations), " variation(s)")
 end
-
-# --------------------------------------------------------------------
-
-const SGFCollection = Vector{SGFGameTree}

@@ -2,7 +2,7 @@ module Parser
 
 using DataStructures
 using ..Lexer
-using ..SGFNode, ..SGFGameTree, ..SGFCollection
+using ..SGFNode, ..SGFGameTree
 
 """
     ParseError(msg)
@@ -120,8 +120,8 @@ end
 
 # --------------------------------------------------------------------
 
-# SGFCollection = SGFGameTree { SGFGameTree }
-function tryparse(::Type{SGFCollection}, queue::Deque)
+# Vector{SGFGameTree} = SGFGameTree { SGFGameTree }
+function tryparse(::Type{Vector{SGFGameTree}}, queue::Deque)
     col = SGFGameTree[parse(SGFGameTree, queue)]
     tree = tryparse(SGFGameTree, queue)
     while !isnull(tree)
@@ -133,6 +133,7 @@ end
 
 # --------------------------------------------------------------------
 
+parse(str::String) = parse(IOBuffer(str))
 parse(io::IO) = parse(Lexer.TokenStream(io))
 
 function parse(ts::Lexer.TokenStream)
@@ -143,14 +144,14 @@ function parse(ts::Lexer.TokenStream)
             push!(queue, tkn)
         end
     end
-    col = parse(SGFCollection, queue)
+    col = parse(Vector{SGFGameTree}, queue)
     # TODO: check property types (root node, etc)
     col
 end
 
 function parse(::Type{T}, queue::Deque) where T
     res = tryparse(T, queue)
-    isnull(res) && throw(ParseError("$(T.name.name) expected"))
+    isnull(res) && throw(ParseError("unable to parse to $(T.name.name)"))
     get(res)
 end
 
