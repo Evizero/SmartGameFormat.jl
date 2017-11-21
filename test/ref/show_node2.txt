@@ -1,0 +1,4 @@
+SmartGameFormat.SGFNode with 3 properties:
+  :a => Any[2]
+  :b => Any[1.2, 3.2]
+  :c => Any["test"]

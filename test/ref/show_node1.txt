@@ -1,0 +1,2 @@
+SmartGameFormat.SGFNode with 1 property:
+  :a => Any[2]
