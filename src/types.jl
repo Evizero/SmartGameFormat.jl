@@ -127,7 +127,7 @@ correspond to the appropriate node in the main game path. This
 means that if there are any variations, then the first variation
 must denote the continuation of the main game path.
 
-```jldoctests
+```jldoctest
 julia> using SmartGameFormat
 
 julia> t = SGFGameTree()

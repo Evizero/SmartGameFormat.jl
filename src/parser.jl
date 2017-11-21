@@ -1,3 +1,14 @@
+"""
+The `Parser` sub-module is concerned with converting a sequence
+of [`Lexer.Token`](@ref) into a collection (i.e. a vector) of
+[`SGFGameTree`](@ref).
+
+To that end it provides the following functionality:
+
+- [`Parser.parse`](@ref)
+- [`Parser.tryparse`](@ref)
+- [`Parser.ParseError`](@ref)
+"""
 module Parser
 
 using DataStructures
@@ -17,8 +28,17 @@ end
 
 # --------------------------------------------------------------------
 
-# SGFNode = ";" { Property }
+"""
+    tryparse(::Type{SGFNode}, seq::Deque{Token}) -> Nullable{SGFNode}
+
+Try to parse the next `N` token in `seq` into a
+[`SGFNode`](@ref), which means that the immediate next element in
+`seq` is expected to be `Token(';')` followed by zero or more
+properties. Each property must have a unique identifier, or a
+[`ParseError`](@ref) will be thrown.
+"""
 function tryparse(::Type{SGFNode}, queue::Deque)
+    isempty(queue) && return Nullable{SGFNode}()
     token = front(queue)
     token.name === ';' || return Nullable{SGFNode}()
     shift!(queue)
@@ -35,10 +55,31 @@ function tryparse(::Type{SGFNode}, queue::Deque)
     Nullable(SGFNode(properties))
 end
 
-# Property = PropIdent PropValue { PropValue }
+"""
+    tryparse(::Type{Pair}, seq::Deque{Token}) -> Nullable{Pair{Symbol,Vector{Any}}}
+
+Try to parse the next `N` token in `seq` into a `Pair` denoting a
+single property of a [`SGFNode`](@ref). Note that individual
+properties are parsed as `Pair`, because each [`SGFNode`](@ref)
+stores all its properties as a single `Dict`.
+
+For a property to occur in `seq`, the immediate next element in
+`seq` must be a `Token('I', "<ID>")`, where `<ID>` is some
+sequence of uppercase letters denoting the identifier of the
+token. After the identifier there can be one or more property
+*values*. There must be at least one property value.
+
+Each property value must be delimited by a `Token('[')` at the
+beginning and a `Token(']')` at the end. The value itself is
+contained within those two delimiter token as a single
+`Token('S', "<val>")` where `<val>` denotes the value. Note that
+this "S" token is optional and its absence means that the
+property value is the empty value.
+"""
 function tryparse(::Type{Pair}, queue::Deque)
+    isempty(queue) && return Nullable{Pair{Symbol,Vector{Any}}}()
     token = front(queue)
-    token.name === 'I' || return Nullable{SGFNode}()
+    token.name === 'I' || return Nullable{Pair{Symbol,Vector{Any}}}()
     shift!(queue)
     # identifier for the property
     identifier = Symbol(token.value)
@@ -64,8 +105,9 @@ end
 # ValueType  = (None | Number | Real | Double | Color | SimpleText |
 #               Text | Point  | Move | Stone)
 function tryparsevalue(identifier::Symbol, queue::Deque)
+    isempty(queue) && return Nullable{Any}()
     token = front(queue)
-    token.name === '[' || return Nullable{SGFNode}()
+    token.name === '[' || return Nullable{Any}()
     shift!(queue)
     # parse values. There need not be one (as long as [] are there)
     value = nothing # type is going to be Any
@@ -89,14 +131,23 @@ function tryparsevalue(identifier::Symbol, queue::Deque)
     token = shift!(queue)
     token.name === ']' || throw(ParseError("missing \"]\" after property value"))
     # return the newly created value
-    Nullable(value)
+    Nullable{Any}(value)
 end
 
 # --------------------------------------------------------------------
 
-# SGFGameTree = "(" Sequence { SGFGameTree } ")"
-# Sequence = SGFNode { SGFNode }
+"""
+    tryparse(::Type{SGFGameTree}, seq::Deque{Token}) -> Nullable{SGFGameTree}
+
+Try to parse the next `N` token in `seq` into a
+[`SGFGameTree`](@ref).
+
+A game tree must start with a `Token('(')`, followed by one or
+more [`SGFNode`](@ref), followed by zero or more
+sub-[`SGFGameTree`](@ref), and finally end with a `Token(')')`.
+"""
 function tryparse(::Type{SGFGameTree}, queue::Deque)
+    isempty(queue) && return Nullable{SGFGameTree}()
     token = front(queue)
     token.name === '(' || return Nullable{SGFGameTree}()
     shift!(queue)
@@ -114,13 +165,23 @@ function tryparse(::Type{SGFGameTree}, queue::Deque)
         push!(variations, get(tree))
         tree = tryparse(SGFGameTree, queue)
     end
+    # gametree must end with a )
+    token = shift!(queue)
+    token.name === ')' || throw(ParseError("missing \")\" at the end of a game tree"))
     # return the newly created gametree
     Nullable(SGFGameTree(sequence, variations))
 end
 
 # --------------------------------------------------------------------
 
-# Vector{SGFGameTree} = SGFGameTree { SGFGameTree }
+"""
+    tryparse(::Type{Vector{SGFGameTree}}, seq::Deque{Token}) -> Nullable{Vector{SGFGameTree}}
+
+Try to parse the next `N` token in `seq` as a `Vector` of
+[`SGFGameTree`](@ref). Such a vector is called a "collection".
+For a collection to occur there must be at least one parse-able
+[`SGFGameTree`](@ref) in `seq`.
+"""
 function tryparse(::Type{Vector{SGFGameTree}}, queue::Deque)
     col = SGFGameTree[parse(SGFGameTree, queue)]
     tree = tryparse(SGFGameTree, queue)
@@ -133,9 +194,25 @@ end
 
 # --------------------------------------------------------------------
 
-parse(str::String) = parse(IOBuffer(str))
-parse(io::IO) = parse(Lexer.TokenStream(io))
+"""
+    parse(ts::Lexer.TokenStream) -> Vector{SGFGameTree}
 
+Read the lexial token from the stream `ts`, and attempt to parse
+it as an SGF collection. If successful, the collection is
+returned as a vector of [`SGFGameTree`](@ref).
+
+Depending on the content an exception may be thrown to signal
+that it is not a legal SGF specification.
+
+- `Base.EOFError`: Premature end-of-file encountered during
+  tokenisation.
+
+- [`Lexer.LexicalError`](@ref): illegal characters used outside
+  property values. For example lower case letters for identifier.
+
+- [`Parser.ParseError`](@ref): content is not a valid SGF
+  specification (while considering the given the FF version).
+"""
 function parse(ts::Lexer.TokenStream)
     queue = Deque{Lexer.Token}()
     while !eof(ts)

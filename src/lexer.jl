@@ -1,3 +1,14 @@
+"""
+The `Lexer` sub-module is concerned with transcribing a given
+stream of characters into a sequence of domain specific lexical
+units called "token".
+
+Basic usage:
+
+1. Wrap a plain `IO` object into a [`Lexer.TokenStream`](@ref).
+2. Call [`Lexer.next_token`](@ref) to collect another [`Lexer.Token`].
+3. Goto 2. unless end of file is reached.
+"""
 module Lexer
 
 using Base.UTF8proc.isspace
@@ -21,10 +32,10 @@ A SGF specific lexical token. It can be either for the following:
 - `Token(';')`: Separator for nodes.
 - `Token('(')` and `Token(')')`: Delimiter for game trees.
 - `Token('[')` and `Token(']')`: Delimiter for property values.
-- `Token('I', "AB1")`: Identifier for properties. In general this
-  are one or more uppercase letters. However, with the exception
-  of the first position, digits are also allowed to occur in
-  order to supportedx older FF versions.
+- `Token('I', "AB1")`: Identifier for properties. In general these
+  are made up of one or more uppercase letters. However, with the
+  exception of the first position, digits are also allowed to
+  occur in order to supported older FF versions.
 - `Token('S', "abc 23(\\)")`: Any property value between `'['`
   and `']'`. This includes moves, numbers, simple text, and text.
 """
