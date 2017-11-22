@@ -61,7 +61,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "SmartGameFormat.parse_sgf",
     "category": "Function",
-    "text": "parse_sgf(io::IO) -> Vector{SGFGameTree}\nparse_sgf(str::String) -> Vector{SGFGameTree}\n\nRead the content from io (or str), and attempt to parse it as an SGF collection. If successful, the collection is returned as a vector of SGFGameTree. In most cases this collection will just have a single tree.\n\njulia> using SmartGameFormat\n\njulia> col = parse_sgf(\"(; FF[4] KM[6.5]; B[aa])\")\n1-element Array{SmartGameFormat.SGFGameTree,1}:\n SmartGameFormat.SGFNode[KM[6.5] FF[4], B[aa]]\n\njulia> tree = col[1]\n2-node SmartGameFormat.SGFGameTree with 0 variation(s):\n KM[6.5] FF[4]\n B[aa]\n\njulia> node = tree[1]\nSmartGameFormat.SGFNode with 2 properties:\n  :KM => Any[6.5]\n  :FF => Any[\"4\"]\n\nDepending on the content an exception may be thrown to signal that it is not a legal SGF specification.\n\nBase.EOFError: Premature end-of-file encountered during tokenisation.\nLexer.LexicalError: illegal characters used outside property values. For example lower case letters for identifier.\nParser.ParseError: content is not a valid SGF specification (while considering the given the FF version).\n\nInternally, the function simply calls Parser.parse. Take a look at the corresponding documentation for more details.\n\n\n\n"
+    "text": "parse_sgf(io::IO) -> Vector{SGFGameTree}\nparse_sgf(str::String) -> Vector{SGFGameTree}\n\nRead the content from io (or str), and attempt to parse it as an SGF collection. If successful, the collection is returned as a vector of SGFGameTree. In most cases this collection will just have a single tree.\n\njulia> using SmartGameFormat\n\njulia> col = parse_sgf(\"(; FF[4] KM[6.5]; B[aa])\")\n1-element Array{SmartGameFormat.SGFGameTree,1}:\n SmartGameFormat.SGFNode[KM[6.5] FF[4], B[aa]]\n\njulia> tree = col[1]\n2-node SmartGameFormat.SGFGameTree with 0 variation(s):\n KM[6.5] FF[4]\n B[aa]\n\njulia> node = tree[1]\nSmartGameFormat.SGFNode with 2 properties:\n  :KM => Any[6.5]\n  :FF => Any[4]\n\nDepending on the content an exception may be thrown to signal that it is not a legal SGF specification.\n\nBase.EOFError: Premature end-of-file encountered during tokenisation.\nLexer.LexicalError: illegal characters used outside property values. For example lower case letters for identifier.\nParser.ParseError: content is not a valid SGF specification (while considering the given the FF version).\n\nInternally, the function simply calls Parser.parse. Take a look at the corresponding documentation for more details.\n\n\n\n"
 },
 
 {
@@ -101,7 +101,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Lexer Submodule",
     "title": "SmartGameFormat.Lexer",
     "category": "Module",
-    "text": "The Lexer sub-module is concerned with transcribing a given stream of characters into a sequence of domain specific lexical units called \"token\".\n\nBasic usage:\n\nWrap a plain IO object into a Lexer.TokenStream.\nCall Lexer.next_token to collect another Lexer.Token.\nGoto 2. unless end of file is reached.\n\n\n\n"
+    "text": "The Lexer sub-module is concerned with transcribing a given stream of characters into a sequence of domain specific lexical units called \"token\".\n\nBasic methodology:\n\nWrap a plain IO object into a Lexer.CharStream.\nCall Lexer.next_token to collect another Lexer.Token from the character stream.\nGoto 2. unless end of file is reached.\n\nFor convenience the above process is simplified by providing the type Lexer.TokenStream, which supports eof, read and Lexer.peek.\n\n\n\n"
 },
 
 {
@@ -113,6 +113,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "lexer/#SmartGameFormat.Lexer.CharStream",
+    "page": "Lexer Submodule",
+    "title": "SmartGameFormat.Lexer.CharStream",
+    "category": "Type",
+    "text": "CharStream(io::IO)\n\nStateful decorator around io to keep track of some context information, as well as allow the use of peek (i.e. looking at the next character without consuming it).\n\n\n\n"
+},
+
+{
+    "location": "lexer/#SmartGameFormat.Lexer.TokenStream",
+    "page": "Lexer Submodule",
+    "title": "SmartGameFormat.Lexer.TokenStream",
+    "category": "Type",
+    "text": "TokenStream(cs::CharStream)\n\nStateful decorator around cs to keep track of some context information, as well as allow the use of peek (i.e. looking at the next Token without consuming it).\n\nIt uses the function next_token to create a new Token from the current position of cs onwards.\n\n\n\n"
+},
+
+{
     "location": "lexer/#SmartGameFormat.Lexer.Token",
     "page": "Lexer Submodule",
     "title": "SmartGameFormat.Lexer.Token",
@@ -121,19 +137,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "lexer/#SmartGameFormat.Lexer.TokenStream",
-    "page": "Lexer Submodule",
-    "title": "SmartGameFormat.Lexer.TokenStream",
-    "category": "Type",
-    "text": "TokenStream(io::IO)\n\nStateful decorator around an io to create Token by using the function next_token.\n\n\n\n"
-},
-
-{
     "location": "lexer/#Types-1",
     "page": "Lexer Submodule",
     "title": "Types",
     "category": "section",
-    "text": "Token\nTokenStream"
+    "text": "CharStream\nTokenStream\nToken"
+},
+
+{
+    "location": "lexer/#SmartGameFormat.Lexer.peek",
+    "page": "Lexer Submodule",
+    "title": "SmartGameFormat.Lexer.peek",
+    "category": "Function",
+    "text": "peek(cs::CharStream, ::Type{Char}) -> Char\n\nReturn the next Char in cs without consuming it, which means that the next time peek or read is called, the same Char will be returned.\n\n\n\npeek(ts::TokenStream, ::Type{Token}) -> Token\n\nReturn the next Token in ts without consuming it, which means that the next time peek or read is called, the same Token will be returned.\n\n\n\n"
 },
 
 {
@@ -141,7 +157,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Lexer Submodule",
     "title": "SmartGameFormat.Lexer.next_token",
     "category": "Function",
-    "text": "next_token(ts::TokenStream) -> Token\n\nReads and returns the next Token from the given token stream ts. If no more token are available, then a EOFError will be thrown.\n\nNote that the lexer should support FF[1]-FF[4] versions. In case any unambiguously illegal character sequence is encountered, the function will throw a LexicalError.\n\n\n\n"
+    "text": "next_token(cs::CharStream) -> Token\n\nReads and returns the next Token from the given character stream cs. If no more token are available, then a EOFError will be thrown.\n\nNote that the lexer should support FF[1]-FF[4] versions. In case any unambiguously illegal character sequence is encountered, the function will throw a LexicalError.\n\n\n\n"
 },
 
 {
@@ -149,7 +165,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Lexer Submodule",
     "title": "Functions",
     "category": "section",
-    "text": "next_token"
+    "text": "peek\nnext_token"
 },
 
 {
@@ -197,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Parser Submodule",
     "title": "SmartGameFormat.Parser.parse",
     "category": "Function",
-    "text": "parse(ts::Lexer.TokenStream) -> Vector{SGFGameTree}\n\nRead all the lexial token from the stream ts into a Deque, and attempt to parse it as an SGF collection by calling tryparse. If successful, the SGF collection is returned as a vector of SGFGameTree. Note that the stream ts is first converted into a Deque{Token} in order to support peeking at the next Lexer.Token without removing it.\n\nDepending on the content an exception may be thrown to signal that it is not a legal SGF specification.\n\nBase.EOFError: Premature end-of-file encountered during tokenisation.\nLexer.LexicalError: illegal characters used outside property values. For example lower case letters for identifier.\nParser.ParseError: content is not a valid SGF specification (while considering the given the FF version).\n\n\n\n"
+    "text": "parse(ts::Lexer.TokenStream) -> Vector{SGFGameTree}\n\nRead all the lexical Lexer.Token from the Lexer.TokenStream ts, and attempt to parse the sequence of token as an SGF collection. To accomplish this it uses the function tryparse. If successful, the SGF collection is returned as a Vector of SGFGameTree.\n\nDepending on the content, any of the following exceptions may be thrown to signal that it is not a legal SGF specification.\n\nBase.EOFError: Premature end-of-file encountered during tokenisation.\nLexer.LexicalError: Illegal characters used outside property values. For example lower case letters for identifier.\nParser.ParseError: Content is not a valid SGF specification (while considering the given the FF version).\n\n\n\nparse(::Type{T}, ts::Lexer.TokenStream) -> T\n\nSame as the corresponding tryparse method, but instead of returning a Nullable it throws a ParseError if it is unable to parse the next N token in ts to type T.\n\n\n\n"
 },
 
 {
@@ -205,7 +221,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Parser Submodule",
     "title": "SmartGameFormat.Parser.tryparse",
     "category": "Function",
-    "text": "tryparse(::Type{SGFNode}, seq::Deque{Token}) -> Nullable{SGFNode}\n\nTry to parse the next N token in seq into a SGFNode, which means that the immediate next element in seq is expected to be Token(';') followed by zero or more properties. Each property must have a unique identifier, or a ParseError will be thrown.\n\n\n\ntryparse(::Type{Pair}, seq::Deque{Token}) -> Nullable{Pair{Symbol,Vector{Any}}}\n\nTry to parse the next N token in seq into a Pair denoting a single property of a SGFNode. Note that individual properties are parsed as Pair, because each SGFNode stores all its properties as a single Dict.\n\nFor a property to occur in seq, the immediate next element in seq must be a Token('I', \"<ID>\"), where <ID> is some sequence of uppercase letters denoting the identifier of the token. After the identifier there can be one or more property values. There must be at least one property value.\n\nEach property value must be delimited by a Token('[') at the beginning and a Token(']') at the end. The value itself is contained within those two delimiter token as a single Token('S', \"<val>\") where <val> denotes the value. Note that this \"S\" token is optional and its absence means that the property value is the empty value.\n\n\n\ntryparse(::Type{SGFGameTree}, seq::Deque{Token}) -> Nullable{SGFGameTree}\n\nTry to parse the next N token in seq into a SGFGameTree.\n\nA game tree must start with a Token('('), followed by one or more SGFNode, followed by zero or more sub-SGFGameTree, and finally end with a Token(')').\n\n\n\ntryparse(::Type{Vector{SGFGameTree}}, seq::Deque{Token}) -> Nullable{Vector{SGFGameTree}}\n\nTry to parse the next N token in seq as a Vector of SGFGameTree. Such a vector is called a \"collection\". For a collection to occur there must be at least one parse-able SGFGameTree in seq.\n\n\n\n"
+    "text": "tryparse(::Type{SGFNode}, ts::Lexer.TokenStream) -> Nullable{SGFNode}\n\nTry to parse the next N token in ts into a SGFNode, which means that the immediate next element in ts is expected to be Token(';') followed by zero or more properties. Each property must have a unique identifier, or a ParseError will be thrown.\n\n\n\ntryparse(::Type{Pair}, ts::Lexer.TokenStream) -> Nullable{Pair{Symbol,Vector{Any}}}\n\nTry to parse the next N token in ts into a Pair denoting a single property of a SGFNode. Note that individual properties are parsed as Pair, because each SGFNode stores all its properties as a single Dict.\n\nFor a property to occur in ts, the immediate next element in ts must be a Token('I', \"<ID>\"), where <ID> is some sequence of uppercase letters denoting the identifier of the token. After the identifier there can be one or more property values. There must be at least one property value.\n\nEach property value must be delimited by a Token('[') at the beginning and a Token(']') at the end. The value itself is contained within those two delimiter token as a single Token('S', \"<val>\") where <val> denotes the value. Note that this \"S\" token is optional and its absence means that the property value is the empty value.\n\n\n\ntryparse(::Type{SGFGameTree}, ts::Lexer.TokenStream) -> Nullable{SGFGameTree}\n\nTry to parse the next N token in ts into a SGFGameTree.\n\nA game tree must start with a Token('('), followed by one or more SGFNode, followed by zero or more sub-SGFGameTree, and finally end with a Token(')').\n\n\n\ntryparse(::Type{Vector{SGFGameTree}}, ts::Lexer.TokenStream) -> Nullable{Vector{SGFGameTree}}\n\nTry to parse the next N token in ts as a Vector of SGFGameTree. Such a vector is called a \"collection\". For a collection to occur there must be at least one parse-able SGFGameTree in ts.\n\n\n\n"
 },
 
 {
