@@ -3,12 +3,16 @@ The `Lexer` sub-module is concerned with transcribing a given
 stream of characters into a sequence of domain specific lexical
 units called "token".
 
-Basic usage:
+Basic methodology:
 
-1. Wrap a plain `IO` object into a [`Lexer.TokenStream`](@ref).
+1. Wrap a plain `IO` object into a [`Lexer.CharStream`](@ref).
 2. Call [`Lexer.next_token`](@ref) to collect another
-   [`Lexer.Token`](@ref).
+   [`Lexer.Token`](@ref) from the character stream.
 3. Goto 2. unless end of file is reached.
+
+For convenience the above process is simplified by providing the
+type [`Lexer.TokenStream`](@ref), which supports `eof`, `read`
+and [`Lexer.peek`](@ref).
 """
 module Lexer
 
@@ -52,68 +56,81 @@ Base.hash(t::Token, h::UInt) = hash(t.name, hash(t.value, hash(:Token, h)))
 Base.:(==)(a::Token, b::Token) = isequal(a.name, b.name) && isequal(a.value, b.value)
 
 """
-    TokenStream(io::IO)
+    CharStream(io::IO)
 
-Stateful decorator around an `io` to create [`Token`](@ref) by
-using the function [`next_token`](@ref).
+Stateful decorator around `io` to keep track of some context
+information, as well as allow the use of [`peek`](@ref) (i.e.
+looking at the next character without consuming it).
 """
-mutable struct TokenStream{I<:IO}
+mutable struct CharStream{I<:IO}
     io::I
     inproperty::Bool
     next::Char
 end
 
-TokenStream(io::IO) = TokenStream(io, false, '\0')
+CharStream(io::IO) = CharStream(io, false, '\0')
 
-Base.eof(ts::TokenStream) = eof(ts.io) && (ts.next == '\0')
-for fun in (:read, :position, :seek)
-    @eval (Base.$fun)(ts::TokenStream, args...) =
-        (Base.$fun)(ts.io, args...)
+Base.eof(cs::CharStream) = eof(cs.io) && (cs.next == '\0')
+
+"""
+    peek(cs::CharStream, ::Type{Char}) -> Char
+
+Return the next `Char` in `cs` without consuming it, which means
+that the next time `peek` or `read` is called, the same `Char`
+will be returned.
+"""
+function peek(cs::CharStream, ::Type{Char})
+    if cs.next == '\0'
+        cs.next = read(cs.io, Char)::Char
+    end
+    cs.next
+end
+
+function Base.read(cs::CharStream, ::Type{Char})
+    if cs.next == '\0'
+        read(cs.io, Char)::Char
+    else
+        c = cs.next
+        cs.next = '\0'
+        c
+    end
 end
 
 """
-    next_token(ts::TokenStream) -> Token
+    next_token(cs::CharStream) -> Token
 
-Reads and returns the next [`Token`](@ref) from the given token
-stream `ts`. If no more token are available, then a `EOFError`
-will be thrown.
+Reads and returns the next [`Token`](@ref) from the given
+character stream `cs`. If no more token are available, then a
+`EOFError` will be thrown.
 
 Note that the lexer should support FF[1]-FF[4] versions. In case
 any unambiguously illegal character sequence is encountered, the
 function will throw a [`LexicalError`](@ref).
 """
-function next_token(ts::TokenStream)
-    eof(ts) && throw(EOFError())
-    c = ts.next == '\0' ? read(ts, Char)::Char : ts.next
-    ts.next = '\0'
-    if ts.inproperty && c === ']'
-        ts.inproperty = false
+function next_token(cs::CharStream)
+    eof(cs) && throw(EOFError())
+    c = read(cs, Char)
+    if cs.inproperty && c === ']'
+        cs.inproperty = false
         Token(']')
-    elseif ts.inproperty
+    elseif cs.inproperty
         buf = UInt8[c]
         while true
-            c = read(ts, Char)::Char
-            @label check_c_again
+            c = peek(cs, Char)
             if c === ']'
-                ts.next = c
                 break
             elseif c === '\\'
-                c = read(ts, Char)::Char
-                consumed = false
+                read(cs, Char) # consume \\
+                c = read(cs, Char)
                 # newlines are removed after '\\'
                 if c === '\r'
                     # consume additional \n if it exists
-                    c = read(ts, Char)::Char
-                    if c != '\n'
-                        @goto check_c_again
-                    end
+                    peek(cs, Char) == '\n' && read(cs, Char)
                 elseif c === '\n'
                     # consume additional \r if it exists
-                    c = read(ts, Char)::Char
-                    if c != '\r'
-                        @goto check_c_again
-                    end
+                    peek(cs, Char) == '\r' && read(cs, Char)
                 elseif isspace(c)
+                    # all other whitespaces are converted to " "
                     push!(buf, ' ')
                 else
                     # everything else is stored verbatim
@@ -121,31 +138,29 @@ function next_token(ts::TokenStream)
                     push!(buf, c)
                 end
             elseif c === '\r'
+                read(cs, Char) # consume \r
                 # we represent newlines always as a single \n
                 push!(buf, '\n')
                 # consume additional \n if it exists
-                c = read(ts, Char)::Char
-                if c != '\n'
-                    @goto check_c_again
-                end
+                peek(cs, Char) == '\n' && read(cs, Char)
             elseif c === '\n'
+                read(cs, Char) # consume \n
                 push!(buf, '\n')
                 # consume additional \r if it exists
-                c = read(ts, Char)::Char
-                if c != '\r'
-                    @goto check_c_again
-                end
+                peek(cs, Char) == '\r' && read(cs, Char)
             elseif isspace(c)
+                read(cs, Char) # consume " "
                 # since newlines are already processed at this point,
                 # every other whitespace can be replaced with ' '
                 push!(buf, ' ')
             else
+                read(cs, Char) # consume character
                 push!(buf, c)
             end
         end
         Token('S', String(buf))
     elseif c === '['
-        ts.inproperty = true
+        cs.inproperty = true
         Token('[')
     elseif c === '('
         Token('(')
@@ -156,21 +171,65 @@ function next_token(ts::TokenStream)
     elseif c in 'A':'Z'
         buf = UInt8[c]
         while true
-            c = read(ts, Char)::Char
+            c = read(cs, Char)
             if c in 'A':'Z'
                 push!(buf, c)
             elseif c in '0':'9' # compatibility with FF[1-3]
                 push!(buf, c)
             else
-                ts.next = c
+                cs.next = c
                 break
             end
         end
         Token('I', String(buf))
     elseif isspace(c)
-        eof(ts) ? Token('\0') : next_token(ts)
+        eof(cs) ? Token('\0') : next_token(cs)
     else
         throw(LexicalError("Invalid character: \"$c\""))
+    end
+end
+
+"""
+    TokenStream(cs::CharStream)
+
+Stateful decorator around `cs` to keep track of some context
+information, as well as allow the use of [`peek`](@ref) (i.e.
+looking at the next [`Token`](@ref) without consuming it).
+
+It uses the function [`next_token`](@ref) to create a new
+[`Token`](@ref) from the current position of `cs` onwards.
+"""
+mutable struct TokenStream{I<:IO}
+    stream::CharStream{I}
+    next::Token
+end
+
+TokenStream(cs::CharStream) = TokenStream(cs, Token('\0'))
+TokenStream(io::IO) = TokenStream(CharStream(io))
+
+Base.eof(ts::TokenStream) = eof(ts.stream) && (ts.next == Token('\0'))
+
+"""
+    peek(ts::TokenStream, ::Type{Token}) -> Token
+
+Return the next [`Token`](@ref) in `ts` without consuming it,
+which means that the next time `peek` or `read` is called, the
+same [`Token`](@ref) will be returned.
+"""
+function peek(ts::TokenStream, ::Type{Token})
+    if ts.next == Token('\0')
+        ts.next = next_token(ts.stream)
+    end
+    ts.next
+end
+
+function Base.read(ts::TokenStream, ::Type{Token})
+    if ts.next == Token('\0')
+        next_token(ts.stream)
+    else
+        t = ts.next
+        ts.next = Token('\0')
+        t
     end
 end
 

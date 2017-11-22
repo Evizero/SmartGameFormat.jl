@@ -1,6 +1,8 @@
 # SmartGameFormat
 
-_Julia package for reading and writing the SGF File Format._
+_Julia package for reading and writing the SGF File Format; a
+text based format that is commonly used to store game records of
+popular board games, such as Go, Backgammon, or Hex._
 
 | **Package Status** | **Package Evaluator** | **Build Status** |
 |:------------------:|:---------------------:|:-----------------:|

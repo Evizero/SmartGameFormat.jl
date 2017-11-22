@@ -4,7 +4,7 @@ function read_all_token(str)
     io = lx.TokenStream(IOBuffer(str))
     tkn = lx.Token[]
     while !eof(io)
-        push!(tkn, lx.next_token(io))
+        push!(tkn, read(io, lx.Token))
     end
     tkn
 end
@@ -15,7 +15,9 @@ end
     # nothing should be exported
     @test_throws UndefVarError Lexer
     @test_throws UndefVarError Token
+    @test_throws UndefVarError CharStream
     @test_throws UndefVarError TokenStream
+    @test_throws UndefVarError peek
     @test_throws UndefVarError next_token
 end
 
@@ -25,7 +27,7 @@ end
     for str in [string.(0:9)...,
                 string.('a':'z')...,
                 split("'!\"§\$%&/?]\\,<>.:-_#+*","")...]
-        io = lx.TokenStream(IOBuffer(str))
+        io = lx.CharStream(IOBuffer(str))
         @test_throws lx.LexicalError lx.next_token(io)
     end
     # some illegal examples strings

@@ -11,13 +11,15 @@ Lexer
 ## Types
 
 ```@docs
-Token
+CharStream
 TokenStream
+Token
 ```
 
 ## Functions
 
 ```@docs
+peek
 next_token
 ```
 

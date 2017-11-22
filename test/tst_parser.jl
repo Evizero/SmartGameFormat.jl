@@ -7,3 +7,5 @@ const ps = SmartGameFormat.Parser
     @test parse === Base.parse
     @test tryparse === Base.tryparse
 end
+
+# unsupported FF

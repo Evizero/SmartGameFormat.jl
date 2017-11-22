@@ -91,7 +91,7 @@ julia> tree = col[1]
 julia> node = tree[1]
 SmartGameFormat.SGFNode with 2 properties:
   :KM => Any[6.5]
-  :FF => Any["4"]
+  :FF => Any[4]
 ```
 
 Depending on the content an exception may be thrown to signal
