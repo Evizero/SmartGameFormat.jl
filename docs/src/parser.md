@@ -8,6 +8,12 @@ CurrentModule = SmartGameFormat.Parser
 Parser
 ```
 
+## Types
+
+```@docs
+ParseContext
+```
+
 ## Functions
 
 ```@docs

@@ -192,9 +192,8 @@ end
 """
     TokenStream(cs::CharStream)
 
-Stateful decorator around `cs` to keep track of some context
-information, as well as allow the use of [`peek`](@ref) (i.e.
-looking at the next [`Token`](@ref) without consuming it).
+Stateful decorator around `cs` to allow the use of [`peek`](@ref)
+(i.e. looking at the next [`Token`](@ref) without consuming it).
 
 It uses the function [`next_token`](@ref) to create a new
 [`Token`](@ref) from the current position of `cs` onwards.

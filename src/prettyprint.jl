@@ -32,7 +32,14 @@ function print_sgf(io::IO, p::Pair; color = true)
     for v in p.second
         print(io, "[")
         print_crayon(io, Crayon(foreground = 143), color)
-        print(io, v)
+        if v isa String
+            v2 = replace(v, "]", "\\]")
+            v2 = replace(v2, ")", "\\)")
+            v2 = replace(v2, ":", "\\:")
+            print(io, v2)
+        else
+            print(io, v)
+        end
         print_crayon(io, Crayon(reset = true), color)
         print(io, "]")
     end
