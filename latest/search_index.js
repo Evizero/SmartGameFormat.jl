@@ -101,7 +101,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Lexer Submodule",
     "title": "SmartGameFormat.Lexer",
     "category": "Module",
-    "text": "The Lexer sub-module is concerned with transcribing a given stream of characters into a sequence of domain specific lexical units called \"token\".\n\nBasic usage:\n\nWrap a plain IO object into a Lexer.TokenStream.\nCall Lexer.next_token to collect another [Lexer.Token].\nGoto 2. unless end of file is reached.\n\n\n\n"
+    "text": "The Lexer sub-module is concerned with transcribing a given stream of characters into a sequence of domain specific lexical units called \"token\".\n\nBasic usage:\n\nWrap a plain IO object into a Lexer.TokenStream.\nCall Lexer.next_token to collect another Lexer.Token.\nGoto 2. unless end of file is reached.\n\n\n\n"
 },
 
 {
@@ -117,7 +117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Lexer Submodule",
     "title": "SmartGameFormat.Lexer.Token",
     "category": "Type",
-    "text": "Token(name::Char, [value::String])\n\nA SGF specific lexical token. It can be either for the following:\n\nToken('\\0'): Empty token to denote trailing whitespaces.\nToken(';'): Separator for nodes.\nToken('(') and Token(')'): Delimiter for game trees.\nToken('[') and Token(']'): Delimiter for property values.\nToken('I', \"AB1\"): Identifier for properties. In general these are made up of one or more uppercase letters. However, with the exception of the first position, digits are also allowed to occur in order to supported older FF versions.\nToken('S', \"abc 23(\\)\"): Any property value between '[' and ']'. This includes moves, numbers, simple text, and text.\n\n\n\n"
+    "text": "Token(name::Char, [value::String])\n\nA SGF specific lexical token. It can be either for the following:\n\nToken('\\0'): Empty token to denote trailing whitespaces.\nToken(';'): Separator for nodes.\nToken('(') and Token(')'): Delimiter for game trees.\nToken('[') and Token(']'): Delimiter for property values.\nToken('I', \"AB1\"): Identifier for properties. In general these are made up of one or more uppercase letters. However, with the exception of the first position, digits are also allowed to occur. This is done in order to supported older FF versions.\nToken('S', \"abc 23(\\)\"): Any property value between '[' and ']'. This includes moves, numbers, simple text, and text.\n\n\n\n"
 },
 
 {
@@ -125,7 +125,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Lexer Submodule",
     "title": "SmartGameFormat.Lexer.TokenStream",
     "category": "Type",
-    "text": "TokenStream(io::IO)\n\nStateful decorator around an io to create Token from using next_token.\n\n\n\n"
+    "text": "TokenStream(io::IO)\n\nStateful decorator around an io to create Token by using the function next_token.\n\n\n\n"
 },
 
 {
@@ -197,7 +197,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Parser Submodule",
     "title": "SmartGameFormat.Parser.parse",
     "category": "Function",
-    "text": "parse(ts::Lexer.TokenStream) -> Vector{SGFGameTree}\n\nRead the lexial token from the stream ts, and attempt to parse it as an SGF collection. If successful, the collection is returned as a vector of SGFGameTree.\n\nDepending on the content an exception may be thrown to signal that it is not a legal SGF specification.\n\nBase.EOFError: Premature end-of-file encountered during tokenisation.\nLexer.LexicalError: illegal characters used outside property values. For example lower case letters for identifier.\nParser.ParseError: content is not a valid SGF specification (while considering the given the FF version).\n\n\n\n"
+    "text": "parse(ts::Lexer.TokenStream) -> Vector{SGFGameTree}\n\nRead all the lexial token from the stream ts into a Deque, and attempt to parse it as an SGF collection by calling tryparse. If successful, the SGF collection is returned as a vector of SGFGameTree. Note that the stream ts is first converted into a Deque{Token} in order to support peeking at the next Lexer.Token without removing it.\n\nDepending on the content an exception may be thrown to signal that it is not a legal SGF specification.\n\nBase.EOFError: Premature end-of-file encountered during tokenisation.\nLexer.LexicalError: illegal characters used outside property values. For example lower case letters for identifier.\nParser.ParseError: content is not a valid SGF specification (while considering the given the FF version).\n\n\n\n"
 },
 
 {
