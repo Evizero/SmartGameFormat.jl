@@ -84,7 +84,7 @@ function tryparse(::Type{Pair}, queue::Deque)
     # identifier for the property
     identifier = Symbol(token.value)
     # there must be at least one value
-    values = Any[] # There must be at least one
+    values = Any[]
     value = tryparsevalue(identifier, queue)
     isnull(value) && throw(ParseError("missing \"[\" after identifier"))
     push!(values, get(value))
@@ -197,9 +197,12 @@ end
 """
     parse(ts::Lexer.TokenStream) -> Vector{SGFGameTree}
 
-Read the lexial token from the stream `ts`, and attempt to parse
-it as an SGF collection. If successful, the collection is
-returned as a vector of [`SGFGameTree`](@ref).
+Read all the lexial token from the stream `ts` into a `Deque`,
+and attempt to parse it as an SGF collection by calling
+[`tryparse`](@ref). If successful, the SGF collection is returned
+as a vector of [`SGFGameTree`](@ref). Note that the stream `ts`
+is first converted into a `Deque{Token}` in order to support
+peeking at the next [`Lexer.Token`](@ref) without removing it.
 
 Depending on the content an exception may be thrown to signal
 that it is not a legal SGF specification.

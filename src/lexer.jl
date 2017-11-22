@@ -6,7 +6,8 @@ units called "token".
 Basic usage:
 
 1. Wrap a plain `IO` object into a [`Lexer.TokenStream`](@ref).
-2. Call [`Lexer.next_token`](@ref) to collect another [`Lexer.Token`].
+2. Call [`Lexer.next_token`](@ref) to collect another
+   [`Lexer.Token`](@ref).
 3. Goto 2. unless end of file is reached.
 """
 module Lexer
@@ -16,8 +17,9 @@ using Base.UTF8proc.isspace
 """
     LexicalError(msg)
 
-The string or stream passed to `Lexer.next_token` was not a valid
-sequence of characters according to the smart game format.
+The string or stream passed to [`Lexer.next_token`](@ref) was not
+a valid sequence of characters according to the smart game
+format.
 """
 struct LexicalError <: Exception
     msg::String
@@ -35,7 +37,7 @@ A SGF specific lexical token. It can be either for the following:
 - `Token('I', "AB1")`: Identifier for properties. In general these
   are made up of one or more uppercase letters. However, with the
   exception of the first position, digits are also allowed to
-  occur in order to supported older FF versions.
+  occur. This is done in order to supported older FF versions.
 - `Token('S', "abc 23(\\)")`: Any property value between `'['`
   and `']'`. This includes moves, numbers, simple text, and text.
 """
@@ -52,8 +54,8 @@ Base.:(==)(a::Token, b::Token) = isequal(a.name, b.name) && isequal(a.value, b.v
 """
     TokenStream(io::IO)
 
-Stateful decorator around an `io` to create [`Token`](@ref) from
-using [`next_token`](@ref).
+Stateful decorator around an `io` to create [`Token`](@ref) by
+using the function [`next_token`](@ref).
 """
 mutable struct TokenStream{I<:IO}
     io::I
@@ -72,9 +74,9 @@ end
 """
     next_token(ts::TokenStream) -> Token
 
-Reads and returns the next `Token` from the given token stream
-`ts`. If no more token are available, then a `EOFError` will be
-thrown.
+Reads and returns the next [`Token`](@ref) from the given token
+stream `ts`. If no more token are available, then a `EOFError`
+will be thrown.
 
 Note that the lexer should support FF[1]-FF[4] versions. In case
 any unambiguously illegal character sequence is encountered, the
