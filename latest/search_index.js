@@ -69,7 +69,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "SmartGameFormat.print_sgf",
     "category": "Function",
-    "text": "print_sgf([io], sgf; [color = true])\n\nWrites the given parsed sfg to io (defaults to STDOUT). If the keyword parameter color = true then an ANSI based syntax highlighting will be used.\n\n\n\n"
+    "text": "print_sgf([io], sgf; [color = true])\n\nWrite the given parsed sfg to io (defaults to STDOUT). If the keyword parameter color = true, then an ANSI based syntax highlighting will be used.\n\n\n\n"
 },
 
 {
