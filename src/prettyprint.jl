@@ -8,8 +8,8 @@ end
 """
     print_sgf([io], sgf; [color = true])
 
-Writes the given parsed `sfg` to `io` (defaults to `STDOUT`).
-If the keyword parameter `color = true` then an ANSI based syntax
+Write the given parsed `sfg` to `io` (defaults to `STDOUT`). If
+the keyword parameter `color = true`, then an ANSI based syntax
 highlighting will be used.
 """
 function print_sgf(A; color = true)
