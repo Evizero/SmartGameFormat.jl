@@ -26,5 +26,20 @@ end
 end
 
 # illegal value types (not numbers)
-@test_throws ps.ParseError parse_sgf("(; FF[A])")
-@test_throws ps.ParseError parse_sgf("(; KM[A])")
+@testset "non-numbers where numbers are expected" begin
+    # basically checks that a `ps.ParseError` is thrown
+    # instead of a `Base.ParseError`
+    @test_throws ps.ParseError parse_sgf("(; FF[A])")
+    @test_throws ps.ParseError parse_sgf("(; KM[A])")
+end
+
+@testset "minimal SGF specifications" begin
+    @test_throws ps.ParseError parse_sgf("()")
+    @test_throws ps.ParseError parse_sgf("(FF[A])")
+    @test_throws ps.ParseError parse_sgf("(;)()")
+    @test parse_sgf("(;)") == [SGFGameTree(SGFNode())]
+    @test parse_sgf("(\n;)") == [SGFGameTree(SGFNode())]
+    @test parse_sgf("( ;)") == [SGFGameTree(SGFNode())]
+    @test parse_sgf("(;)(;)") == [SGFGameTree(SGFNode()),SGFGameTree(SGFNode())]
+
+end

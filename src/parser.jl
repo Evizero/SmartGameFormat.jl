@@ -121,7 +121,9 @@ function tryparse(::Type{SGFGameTree}, ts::Lexer.TokenStream, ctx::ParseContext)
     token.name === '(' || return Nullable{SGFGameTree}()
     read(ts, Lexer.Token)
     # parse sequence of nodes. There must be at least one
-    sequence = SGFNode[parse(SGFNode, ts, ctx)]
+    node = tryparse(SGFNode, ts, ctx)
+    isnull(node) && throw(ParseError("unable to parse SGFNode. Each gametree must have at least one node"))
+    sequence = SGFNode[get(node)]
     ctx.isrootnode = false
     node = tryparse(SGFNode, ts, ctx)
     while !isnull(node)
@@ -197,7 +199,7 @@ function tryparse(::Type{Pair}, ts::Lexer.TokenStream, ctx::ParseContext)
     read(ts, Lexer.Token)
     # identifier for the property
     id = Symbol(token.value)
-    if id ∈ (:AP, :CA, :FF, :GM, :ST, :SZ)
+    if id ∈ [:AP, :CA, :FF, :GM, :ST, :SZ]
         ctx.isrootnode || throw(ParseError("found root property $id in non-root node"))
     end
     # there must be at least one value

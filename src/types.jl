@@ -80,23 +80,27 @@ Base.@propagate_inbounds Base.setindex!(n::SGFNode, v, id) =
 
 function Base.show(io::IO, n::SGFNode)
     if haskey(io, :compact)
-        for (i,p) in enumerate(n.properties)
-            val = if length(p.second) == 1
-                s = first(p.second)
-                if length(s) > 2
-                    "[…]"
+        if length(n.properties) == 0
+            print(io, "<no properties>")
+        else
+            for (i,p) in enumerate(n.properties)
+                val = if length(p.second) == 1
+                    s = first(p.second)
+                    if length(s) > 2
+                        "[…]"
+                    else
+                        string('[', s, ']')
+                    end
                 else
-                    string('[', s, ']')
+                    string("[…|…]")
                 end
-            else
-                string("[…|…]")
+                print(io, p.first, val)
+                if i > 7
+                    print(io, " … (", length(n.properties) - i, " more)")
+                    break
+                end
+                i < length(n.properties) && print(io, " ")
             end
-            print(io, p.first, val)
-            if i > 7
-                print(io, " … (", length(n.properties) - i, " more)")
-                break
-            end
-            i < length(n.properties) && print(io, " ")
         end
     else
         print(io, typeof(n))

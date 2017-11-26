@@ -44,6 +44,14 @@ cloned using `Pkg` as usual.
 Pkg.clone("https://github.com/Evizero/SmartGameFormat.jl.git")
 ```
 
+## Limitations
+
+Currently the character encoding is hardcoded to `UTF-8`. In case
+any other encoding is specified in an `CA` property, a warning is
+raised. Pull requests to improve this situation are welcome. A
+potential solution could be build on top of
+[StringEncodings.jl](https://github.com/nalimilan/StringEncodings.jl).
+
 ## License
 
 This code is free to use under the terms of the MIT license.
